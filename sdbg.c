@@ -26,7 +26,7 @@ kern_return_t get_task_for_pid(int pid) {
     kret = task_for_pid(mach_task_self(), pid, &port);
     
     if (kret != KERN_SUCCESS) {
-        KERN_FAILURE;
+        return KERN_FAILURE;
     }
     return KERN_SUCCESS;
 }
@@ -47,6 +47,22 @@ void readMemory(uint32_t addr, size_t bytes) {
     }
     if (kret != KERN_SUCCESS) {
         printf("Error! vm_read_overwrite failed!\n");
+    }
+    
+}
+
+//reads memory of offset
+//see getReadOffset()
+void readOffset(uint32_t addr, size_t bytes) {
+    unsigned char readOut[bytes];
+    kern_return_t kret;
+    kret = vm_read_overwrite(port, (vm_address_t) getRealOffset(addr), bytes, (vm_offset_t) &readOut, &bytes);
+    
+    if (kret == KERN_SUCCESS) {
+        printf("vm_read_overwite (offset) success!\n");
+    }
+    if (kret != KERN_SUCCESS) {
+        printf("Error! vm_read_overwrite (offset) failed!\n");
     }
     
 }
@@ -113,6 +129,7 @@ void interact() {
                    "write [address] [data] - writes [data] to [address]\n"
                    "writeoffset [offset] [data] - writes [data] to [offset] + slide\n"
                    "read [address] [bytes] - reads [bytes] from [address]\n"
+                   "read [offset] [bytes] - reads [bytes] from [offset] + slide\n"
                    "exit - self explanatory\n");
             strcpy(instr[0], "");
         }
@@ -134,6 +151,12 @@ void interact() {
         }
         else if (strcmp(instr[0], "read\n") == 0) {
             printf("Not enough parameters for read!\n");
+        }
+        else if (strcmp(instr[0], "readoffset") == 0 && strcmp(instr[1], "\0") != 0 && strcmp(instr[2], "\0") != 0) {
+            readMemory((uint32_t) instr[1], (int) instr[2]);
+        }
+        else if (strcmp(instr[0], "readoffset\n") == 0) {
+            printf("Not enough parameters for readoffset!\n");
         }
         else if (strcmp(instr[0], "exit\n") == 0) {
             printf("Exiting SDBG...\n");
