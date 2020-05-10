@@ -93,6 +93,26 @@ void writeOffset(uint32_t offset, uint32_t data) {
     }
 }
 
+
+thread_state_t get_reg(thread_t reg) {
+    kern_return_t kret;
+    
+    return KERN_SUCCESS;
+}
+
+thread_state_t set_reg(thread_t reg) {
+    kern_return_t kret;
+    
+    return KERN_SUCCESS;
+}
+
+thread_state_t get_all_reg(thread_t reg) {
+    kern_return_t kret;
+    
+    return KERN_SUCCESS;
+}
+
+
 //cli
 void interact() {
     char input[128];
@@ -135,13 +155,13 @@ void interact() {
         }
         
         else if (strcmp(instr[0], "write") == 0 && strcmp(instr[1], "\0") != 0 && strcmp(instr[2], "\0") != 0) {
-            writeOffset((uint32_t) instr[1], (uint32_t) instr[2]);
+            writeMemory((uint32_t) instr[1], (uint32_t) instr[2]);
         }
         else if (strcmp(instr[0], "write\n") == 0) {
             printf("Not enough parameters for write!\n");
         }
         else if (strcmp(instr[0], "writeoffset") == 0 && strcmp(instr[1], "\0") != 0 && strcmp(instr[2], "\0") != 0) {
-            writeMemory((uint32_t) instr[1], (uint32_t) instr[2]);
+            writeOffset((uint32_t) instr[1], (uint32_t) instr[2]);
         }
         else if (strcmp(instr[0], "writeoffset\n") == 0) {
             printf("Not enough parameters for writeoffset!\n");
@@ -153,7 +173,7 @@ void interact() {
             printf("Not enough parameters for read!\n");
         }
         else if (strcmp(instr[0], "readoffset") == 0 && strcmp(instr[1], "\0") != 0 && strcmp(instr[2], "\0") != 0) {
-            readMemory((uint32_t) instr[1], (int) instr[2]);
+            readOffset((uint32_t) instr[1], (int) instr[2]);
         }
         else if (strcmp(instr[0], "readoffset\n") == 0) {
             printf("Not enough parameters for readoffset!\n");
