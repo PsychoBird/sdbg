@@ -37,8 +37,8 @@ uint32_t getRealOffset(uint32_t offset) {
 }
 
 //reads memory
-void readMemory(uint32_t addr, size_t bytes) {
-    unsigned char readOut[bytes];
+void readMemory(uint32_t addr, int bytes) {
+    unsigned char *readOut = malloc(sizeof(char)*2)
     kern_return_t kret;
     kret = vm_read_overwrite(port, (vm_address_t) addr, bytes, (vm_offset_t) &readOut, &bytes);
     
@@ -53,8 +53,8 @@ void readMemory(uint32_t addr, size_t bytes) {
 
 //reads memory of offset
 //see getReadOffset()
-void readOffset(uint32_t addr, size_t bytes) {
-    unsigned char readOut[bytes];
+void readOffset(uint32_t addr, int bytes) {
+    unsigned char *readOut = malloc(sizeof(char)*2)
     kern_return_t kret;
     kret = vm_read_overwrite(port, (vm_address_t) getRealOffset(addr), bytes, (vm_offset_t) &readOut, &bytes);
     
@@ -211,6 +211,8 @@ int main() {
         return -1;
     }
     
+    //writeOffset(0x10092DEE8, 0x1F2003D5);
+    //NOP^^ test works!!
     
     interact();
     return 0;
