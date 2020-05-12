@@ -37,8 +37,8 @@ uint32_t getRealOffset(uint32_t offset) {
 }
 
 //reads memory
-void readMemory(uint32_t addr, int bytes) {
-    unsigned char *readOut = malloc(sizeof(char)*2)
+void readMemory(uint32_t addr, vm_size_t bytes) {
+    unsigned char *readOut = malloc(sizeof(char)*2);
     kern_return_t kret;
     kret = vm_read_overwrite(port, (vm_address_t) addr, bytes, (vm_offset_t) &readOut, &bytes);
     
@@ -53,8 +53,8 @@ void readMemory(uint32_t addr, int bytes) {
 
 //reads memory of offset
 //see getReadOffset()
-void readOffset(uint32_t addr, int bytes) {
-    unsigned char *readOut = malloc(sizeof(char)*2)
+void readOffset(uint32_t addr, vm_size_t bytes) {
+    unsigned char *readOut = malloc(sizeof(char)*2);
     kern_return_t kret;
     kret = vm_read_overwrite(port, (vm_address_t) getRealOffset(addr), bytes, (vm_offset_t) &readOut, &bytes);
     
