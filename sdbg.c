@@ -7,6 +7,25 @@
 #include <string.h>
 #include <stdlib.h>
 
+/*
+ sign with these entitlements
+ ldid -Sent.xml sdbg
+ 
+ 
+ <?xml version="1.0" encoding="UTF-8"?>
+ <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd …">
+ <plist version="1.0">
+ <dict>
+ <key>task_for_pid-allow</key><true/>
+ <key>get-task-allow</key> <true/>
+ <key>proc_info-allow</key> <true/>
+ <key>run-unsigned-code</key><true/>
+ </dict>
+ </plist>
+ */
+
+//#define DBG_ARM
+//let me compile on my mac pls
 
 int pid, addr, data = 0;
 mach_port_t port;
@@ -43,7 +62,7 @@ void readMemory(uint32_t addr, vm_size_t bytes) {
     kret = vm_read_overwrite(port, (vm_address_t) addr, bytes, (vm_offset_t) &readOut, &bytes);
     
     if (kret == KERN_SUCCESS) {
-        printf("vm_read_overwite success!\n");
+        printf("%u\n", (unsigned int)&readOut);
     }
     if (kret != KERN_SUCCESS) {
         printf("Error! vm_read_overwrite failed!\n");
@@ -59,7 +78,7 @@ void readOffset(uint32_t addr, vm_size_t bytes) {
     kret = vm_read_overwrite(port, (vm_address_t) getRealOffset(addr), bytes, (vm_offset_t) &readOut, &bytes);
     
     if (kret == KERN_SUCCESS) {
-        printf("vm_read_overwite (offset) success!\n");
+        printf("%u\n", (unsigned int) &readOut);
     }
     if (kret != KERN_SUCCESS) {
         printf("Error! vm_read_overwrite (offset) failed!\n");
@@ -94,23 +113,56 @@ void writeOffset(uint32_t offset, uint32_t data) {
 }
 
 
-thread_state_t get_reg(thread_t reg) {
+
+#if defined(DBG_ARM)
+
+kern_return_t get_reg(char[] reg) {
+    kern_return_t kret;
+    
+    thread_act_port_array_t thread_list;
+    mach_msg_type_number_t thread_count;
+    task_threads(port, &thread_list, &thread_count);
+    
+    //mit documentation
+    thread_act_t reg;
+    arm_thread_state_t *state;
+    mach_msg_type_number_t scount = ARM_THREAD_STATE_COUNT;
+    
+    kret = thread_get_state(thread_list[0], ARM_THREAD_STATE, (thread_state_t) state, &scount);
+    
+    if (kret != KERN_SUCCESS) {
+        return KERN_FAILURE;
+    }
+    printf("")
+    
+    return KERN_SUCCESS;
+}
+
+kern_return_t set_reg(thread_t reg) {
     kern_return_t kret;
     
     return KERN_SUCCESS;
 }
 
-thread_state_t set_reg(thread_t reg) {
+kern_return_t get_all_reg(thread_t reg) {
     kern_return_t kret;
+    //thanks MIT!
+     thread_act_port_array_t thread_list;
+     mach_msg_type_number_t thread_count;
+     kret = task_threads(port, &thread_list, &thread_count);
+     if (kret != KERN_SUCCESS) {
+         return KERN_FAILURE;
+     }
+     
+     arm_thread_state_t *state;
+     mach_msg_type_number_t scount = ARM_THREAD_STATE_COUNT;
+     
+    thread_get_state(thread_list[0], ARM_THREAD_STATE, (thread_state_t) state, &thread_count);
     
     return KERN_SUCCESS;
 }
 
-thread_state_t get_all_reg(thread_t reg) {
-    kern_return_t kret;
-    
-    return KERN_SUCCESS;
-}
+#endif
 
 
 //cli
