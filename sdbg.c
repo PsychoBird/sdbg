@@ -23,75 +23,75 @@
  </plist>
  */
 
+int pid = 0;
+mach_port_t port;
+
 //#define DBG_ARM
 //let me compile on my mac pls
 
+
 //returns your offset / app addr + slide like magic!
-uint32_t getRealOffset(vm_address_t offset) {
+uint32_t get_real_offset(vm_address_t offset) {
     return offset + _dyld_get_image_vmaddr_slide(0);
 }
 
 //reads memory
-void readMemory(mach_port_t port, vm_address_t addr, vm_size_t bytes) {
+void read_memory(mach_port_t port, vm_address_t addr, vm_size_t bytes) {
+    kern_return_t kret = task_for_pid(mach_task_self(), pid, &port);
+    
     printf("[+] Reading %d bytes from memory from address: 0x%lx\n", (int) bytes, addr);
     unsigned char *readOut = malloc(sizeof(char)*bytes);
-    kern_return_t kret;
     kret = vm_read_overwrite(port, addr, bytes, (vm_offset_t) &readOut, &bytes);
 
     if (kret == KERN_SUCCESS) {
-        printf("[+] vm_read_overwrite result: %u\n", (unsigned int)&readOut);
-    }
-    if (kret != KERN_SUCCESS) {
-        printf("[!] Error! vm_read_overwrite failed!\n");
-    }
+        printf("[+] vm_read_overwrite result: %u\n", (unsigned int)&readOut); }
+    else if (kret != KERN_SUCCESS) {
+        printf("[!] Error! vm_read_overwrite failed: %s\n", mach_error_string(kret)); }
 
 }
 
 //reads memory of offset
 //see getReadOffset()
-void readOffset(mach_port_t port, vm_address_t addr, vm_size_t bytes) {
+void read_offset(mach_port_t port, vm_address_t addr, vm_size_t bytes) {
+    kern_return_t kret = task_for_pid(mach_task_self(), pid, &port);
+    
     printf("[+] Reading %d bytes from memory from offset: 0x%lx\n", (int) bytes, addr);
     unsigned char *readOut = malloc(sizeof(char)*bytes);
-    kern_return_t kret;
-    kret = vm_read_overwrite(port, getRealOffset(addr), bytes, (vm_offset_t) &readOut, &bytes);
+    kret = vm_read_overwrite(port, get_real_offset(addr), bytes, (vm_offset_t) &readOut, &bytes);
 
     if (kret == KERN_SUCCESS) {
-        printf("[+] vm_read_overwrite (offset) result: %u\n", (unsigned int) &readOut);
-    }
-    if (kret != KERN_SUCCESS) {
-        printf("[!] Error! vm_read_overwrite (offset) failed!\n");
-    }
+        printf("[+] vm_read_overwrite (offset) result: %u\n", (unsigned int) &readOut); }
+    else if (kret != KERN_SUCCESS) {
+        printf("[!] Error! vm_read_overwrite (offset) failed: %s\n", mach_error_string(kret)); }
 
 }
 
 //write memory to address
-void writeMemory(mach_port_t port, vm_address_t addr, vm_address_t data) {
-    printf("%lu\n", addr);
-    printf("%lu\n", data);
+void write_memory(mach_port_t port, vm_address_t addr, vm_address_t data) {
+    kern_return_t kret = task_for_pid(mach_task_self(), pid, &port);
+
     printf("[+] Writing memory: 0x%lx with data: 0x%lx\n", addr, data);
-    kern_return_t kret;
-    vm_write(port, addr, (vm_offset_t) &data, sizeof(data));
+    kret = vm_write(port, addr, (vm_offset_t) &data, sizeof(data));
+    
     if (kret == KERN_SUCCESS) {
-        printf("[+] vm_write success at: 0x%lx\n", addr);
-    }
+        printf("[+] vm_write success at: 0x%lx\n", addr); }
     else if (kret != KERN_SUCCESS) {
-        printf("[!] Error! vm_write failed!\n");
-    }
+        printf("[!] Error! vm_write failed: %s\n", mach_error_string(kret)); }
 
 }
 
 //write memory to offset
-//see getRealOffset()
-void writeOffset(mach_port_t port, vm_address_t offset, vm_address_t data) {
+//see get_real_offset()
+void write_offset(mach_port_t port, vm_address_t offset, vm_address_t data) {
+    kern_return_t kret = task_for_pid(mach_task_self(), pid, &port);
+    
     printf("[+] Writing offset: 0x%lx with data: 0x%lx\n", offset, data);
-    kern_return_t kret;
-    vm_write(port, (vm_address_t) getRealOffset(offset), (vm_offset_t) &data, sizeof(data));
+    kret = vm_write(port, (vm_address_t) get_real_offset(offset), (vm_offset_t) &data, sizeof(data));
+    
     if (kret == KERN_SUCCESS) {
-        printf("[+] vm_write (offset) success: %x\n", getRealOffset(offset));
-    }
+        printf("[+] vm_write (offset) success: %x\n", get_real_offset(offset)); }
     else if (kret != KERN_SUCCESS) {
-        printf("[!] Error! vm_write (offset) failed!\n");
-    }
+        printf("[!] Error! vm_write (offset) failed: %s\n", mach_error_string(kret)); }
 }
 
 
@@ -113,8 +113,7 @@ kern_return_t get_reg(char[] reg) {
     kret = thread_get_state(thread_list[0], ARM_THREAD_STATE, (thread_state_t) state, &scount);
 
     if (kret != KERN_SUCCESS) {
-        return KERN_FAILURE;
-    }
+        return KERN_FAILURE; }
     printf("")
 
     return KERN_SUCCESS;
@@ -190,8 +189,7 @@ void interact(mach_port_t port) {
                    "writeoffset 0x[offset] 0x[data] - writes 0x[data] to 0x[offset] + slide\n"
                    "read 0x[address] 0x[bytes] - reads 0x[bytes] from 0x[address]\n"
                    "read 0x[offset] 0x[bytes] - reads 0x[bytes] from 0x[offset] + slide\n"
-                   "exit - self explanatory\n");
-        }
+                   "exit - self explanatory\n"); }
         
         //EXIT
         else if (strcmp(args[0], "exit\n") == 0) {
@@ -201,7 +199,7 @@ void interact(mach_port_t port) {
         
         //writeMemory (3 args)
         else if (strcmp(args[0], "write") == 0 && args[1][0] != '\0' && args[2][0] != '\0') {
-            writeMemory(port, (vm_address_t) strtol(args[1], NULL, 0), (vm_address_t) strtol(args[2], NULL, 0)); }
+            write_memory(port, (vm_address_t) strtol(args[1], NULL, 0), (vm_address_t) strtol(args[2], NULL, 0)); }
         else if (strcmp(args[0], "write") == 0 && args[1][0] != '\0' && args[2][0] == '\0') {
             printf("[!] Error! Not enough arguments for write!\n"); }
         else if (strcmp(args[0], "write\n") == 0) {
@@ -209,7 +207,7 @@ void interact(mach_port_t port) {
         
         //writeOffset (3 args)
         else if (strcmp(args[0], "writeoffset") == 0 && args[1][0] != '\0' && args[2][0] != '\0') {
-            writeOffset(port, (vm_address_t) strtol(args[1], NULL, 0), (vm_address_t) strtol(args[2], NULL, 0)); }
+            write_memory(port, (vm_address_t) strtol(args[1], NULL, 0), (vm_address_t) strtol(args[2], NULL, 0)); }
         else if (strcmp(args[0], "writeoffset") == 0 && args[1][0] != '\0' && args[2][0] == '\0') {
             printf("[!] Error! Not enough arguments for writeoffset!\n"); }
         else if (strcmp(args[0], "writeoffset\n") == 0) {
@@ -217,7 +215,7 @@ void interact(mach_port_t port) {
         
         //readMemory (3 args)
         else if (strcmp(args[0], "read") == 0 && args[1][0] != '\0' && args[2][0] != '\0') {
-            readMemory(port, (vm_address_t) strtol(args[1], NULL, 0), (vm_address_t) strtol(args[2], NULL, 0)); }
+            read_memory(port, (vm_address_t) strtol(args[1], NULL, 0), (vm_address_t) strtol(args[2], NULL, 0)); }
         else if (strcmp(args[0], "read") == 0 && args[1][0] != '\0' && args[2][0] == '\0') {
             printf("[!] Error! Not enough arguments for read!\n"); }
         else if (strcmp(args[0], "read\n") == 0) {
@@ -225,7 +223,7 @@ void interact(mach_port_t port) {
         
         //readOffset (3 args)
         else if (strcmp(args[0], "readoffset") == 0 && args[1][0] != '\0' && args[2][0] != '\0') {
-            readMemory(port, (vm_address_t) strtol(args[1], NULL, 0), (vm_address_t) strtol(args[2], NULL, 0)); }
+            read_offset(port, (vm_address_t) strtol(args[1], NULL, 0), (vm_address_t) strtol(args[2], NULL, 0)); }
         else if (strcmp(args[0], "readoffset") == 0 && args[1][0] != '\0' && args[2][0] == '\0') {
             printf("[!] Error! Not enough arguments for readoffset!\n"); }
         else if (strcmp(args[0], "readoffset\n") == 0) {
@@ -247,29 +245,20 @@ int main() {
     }
 
     //get pid to attach
-    int pid = 0;
     printf("[!] PID to attach: ");
     scanf("%d", &pid);
     printf("[+] Attaching to pid: %d\n", pid);
     getchar();
 
-    //task_for_pid
-    mach_port_t port;
-    kern_return_t kret;
-    kret = task_for_pid(mach_task_self(), pid, &port);
-
+    //task_for_pid through get_task_for_pid wrapper
+    kern_return_t kret = task_for_pid(mach_task_self(), pid, &port);
     if (kret != KERN_SUCCESS) {
         printf("[!] Error! Couldn't obtain task_for_pid: %d\n[!] Do you have the proper entitlements?\n[!] Exiting SDBG...\n", pid);
         exit(0);
     }
     else {
-        printf("[+] Obtained task_for_pid: %d!\n", pid);
-    }
-
-    //writeOffset(0x10092DEE8, 0x1F2003D5);
-    //NOP^^ test works!!
-    writeMemory(port, 0x174797800, 0xfffffff);
-
+        printf("[+] Obtained task_for_pid: %d!\n", pid); }
+    
     interact(port);
     return 0;
 }
