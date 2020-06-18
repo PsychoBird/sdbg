@@ -31,8 +31,9 @@ mach_port_t port;
 
 
 //returns your offset / app addr + slide like magic!
-uint32_t get_real_offset(vm_address_t offset) {
-    return offset + _dyld_get_image_vmaddr_slide(0);
+vm_address_t get_real_addr(vm_address_t offset) {
+    vm_address_t slide = _dyld_get_image_vmaddr_slide(0);
+    return offset + slide;
 }
 
 //reads memory
@@ -40,27 +41,28 @@ void read_memory(mach_port_t port, vm_address_t addr, vm_size_t bytes) {
     kern_return_t kret = task_for_pid(mach_task_self(), pid, &port);
     
     printf("[+] Reading %d bytes from memory from address: 0x%lx\n", (int) bytes, addr);
-    unsigned char *readOut = malloc(sizeof(char)*bytes);
+    vm_address_t readOut;
     kret = vm_read_overwrite(port, addr, bytes, (vm_offset_t) &readOut, &bytes);
 
     if (kret == KERN_SUCCESS) {
-        printf("[+] vm_read_overwrite result: %u\n", (unsigned int)&readOut); }
+        printf("[+] vm_read_overwrite return: 0x%lx - as int: %lu\n", readOut, readOut); }
     else if (kret != KERN_SUCCESS) {
         printf("[!] Error! vm_read_overwrite failed: %s\n", mach_error_string(kret)); }
 
 }
 
 //reads memory of offset
-//see getReadOffset()
-void read_offset(mach_port_t port, vm_address_t addr, vm_size_t bytes) {
+//see get_real_addr()
+void read_offset(mach_port_t port, vm_address_t offset, vm_size_t bytes) {
     kern_return_t kret = task_for_pid(mach_task_self(), pid, &port);
     
-    printf("[+] Reading %d bytes from memory from offset: 0x%lx\n", (int) bytes, addr);
-    unsigned char *readOut = malloc(sizeof(char)*bytes);
-    kret = vm_read_overwrite(port, get_real_offset(addr), bytes, (vm_offset_t) &readOut, &bytes);
+    printf("[!] Current slide is: 0x%lx\n", (vm_address_t) _dyld_get_image_vmaddr_slide(0));
+    printf("[+] Reading %d bytes from memory from offset: 0x%lx\n", (int) bytes, get_real_addr(offset));
+    vm_address_t readOut;
+    kret = vm_read_overwrite(port, get_real_addr(offset), bytes, (vm_offset_t) &readOut, &bytes);
 
     if (kret == KERN_SUCCESS) {
-        printf("[+] vm_read_overwrite (offset) result: %u\n", (unsigned int) &readOut); }
+        printf("[+] vm_read_overwrite return: 0x%lx - as int: %lu\n", readOut, readOut); }
     else if (kret != KERN_SUCCESS) {
         printf("[!] Error! vm_read_overwrite (offset) failed: %s\n", mach_error_string(kret)); }
 
@@ -81,15 +83,17 @@ void write_memory(mach_port_t port, vm_address_t addr, vm_address_t data) {
 }
 
 //write memory to offset
-//see get_real_offset()
+//see get_real_addr()
+//may not work as expected, works in theory but permission changes could be required
 void write_offset(mach_port_t port, vm_address_t offset, vm_address_t data) {
     kern_return_t kret = task_for_pid(mach_task_self(), pid, &port);
     
-    printf("[+] Writing offset: 0x%lx with data: 0x%lx\n", offset, data);
-    kret = vm_write(port, (vm_address_t) get_real_offset(offset), (vm_offset_t) &data, sizeof(data));
+    printf("[!] Current slide is: 0x%lx\n", (vm_address_t) _dyld_get_image_vmaddr_slide(0));
+    printf("[+] Writing address: 0x%lx with data: 0x%lx\n", get_real_addr(offset), data);
+    kret = vm_write(port, get_real_addr(offset), (vm_offset_t) &data, sizeof(data));
     
     if (kret == KERN_SUCCESS) {
-        printf("[+] vm_write (offset) success: %x\n", get_real_offset(offset)); }
+        printf("[+] vm_write (offset) success at: %lx\n", get_real_addr(offset)); }
     else if (kret != KERN_SUCCESS) {
         printf("[!] Error! vm_write (offset) failed: %s\n", mach_error_string(kret)); }
 }
@@ -189,6 +193,7 @@ void interact(mach_port_t port) {
                    "writeoffset 0x[offset] 0x[data] - writes 0x[data] to 0x[offset] + slide\n"
                    "read 0x[address] 0x[bytes] - reads 0x[bytes] from 0x[address]\n"
                    "read 0x[offset] 0x[bytes] - reads 0x[bytes] from 0x[offset] + slide\n"
+                   "slide - gets current slide as 0x[slide]\n"
                    "exit - self explanatory\n"); }
         
         //EXIT
@@ -196,6 +201,10 @@ void interact(mach_port_t port) {
             printf("[!] Exiting SDBG...\n"); exit(0); }
         else if (strcmp(args[0], "quit\n") == 0) {
             printf("[!] Exiting SDBG...\n"); exit(0); }
+        
+        //get slide
+        else if (strcmp(args[0], "slide\n") == 0) {
+            printf("[!] Current slide is: 0x%lx\n", (vm_address_t) _dyld_get_image_vmaddr_slide(0)); }
         
         //writeMemory (3 args)
         else if (strcmp(args[0], "write") == 0 && args[1][0] != '\0' && args[2][0] != '\0') {
@@ -207,7 +216,7 @@ void interact(mach_port_t port) {
         
         //writeOffset (3 args)
         else if (strcmp(args[0], "writeoffset") == 0 && args[1][0] != '\0' && args[2][0] != '\0') {
-            write_memory(port, (vm_address_t) strtol(args[1], NULL, 0), (vm_address_t) strtol(args[2], NULL, 0)); }
+            write_offset(port, (vm_address_t) strtol(args[1], NULL, 0), (vm_address_t) strtol(args[2], NULL, 0)); }
         else if (strcmp(args[0], "writeoffset") == 0 && args[1][0] != '\0' && args[2][0] == '\0') {
             printf("[!] Error! Not enough arguments for writeoffset!\n"); }
         else if (strcmp(args[0], "writeoffset\n") == 0) {
