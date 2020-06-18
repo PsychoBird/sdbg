@@ -30,6 +30,7 @@ mach_port_t port;
 //let me compile on my mac pls
 
 
+
 //returns your offset / app addr + slide like magic!
 vm_address_t get_real_addr(vm_address_t offset) {
     vm_address_t slide = _dyld_get_image_vmaddr_slide(0);
@@ -99,51 +100,46 @@ void write_offset(mach_port_t port, vm_address_t offset, vm_address_t data) {
 }
 
 
+//vm_protect
+void set_region_protection(mach_port_t port, vm_address_t addr, vm_size_t size) {
+    kern_return_t kret = task_for_pid(mach_task_self(), pid, &port);
+    
+    printf("[!] Setting %d byte region permissions at 0x%lx as R|W|X\n", (int) size, addr);
+    kret = vm_protect(port, addr, size, 0, VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE);
+        
+    if (kret == KERN_SUCCESS) {
+        printf("[+] vm_protect success!\n"); }
+    else if (kret != KERN_SUCCESS) {
+        printf("[!] Error! vm_protect failure with: %s\n", mach_error_string(kret)); }
+}
+
 
 #if defined(DBG_ARM)
 
-kern_return_t get_reg(char[] reg) {
-    kern_return_t kret;
+kern_return_t register_magic(mach_port_t port, bool isWrite, char reg[40]) {
+    kern_return_t kret = task_for_pid(mach_task_self(), pid, &port);
+    
+    if (strcmp(reg, "all") == 0) {
+        printf("[!] Reading all registers...\n");
+    }
 
+    //guided by https://www.exploit-db.com/papers/13176 although it was meant for PPC
     thread_act_port_array_t thread_list;
     mach_msg_type_number_t thread_count;
-    task_threads(port, &thread_list, &thread_count);
+    kret = task_threads(port, &thread_list, &thread_count);
+    if (kret != KERN_SUCCESS) {
+        printf("[!] Error! Could not get task_threads with error: %s\n", mach_error_string(kret));
+        return KERN_FAILURE;
+    }
 
-    //mit documentation
-    thread_act_t reg;
     arm_thread_state_t *state;
     mach_msg_type_number_t scount = ARM_THREAD_STATE_COUNT;
-
-    kret = thread_get_state(thread_list[0], ARM_THREAD_STATE, (thread_state_t) state, &scount);
-
-    if (kret != KERN_SUCCESS) {
-        return KERN_FAILURE; }
-    printf("")
-
-    return KERN_SUCCESS;
-}
-
-kern_return_t set_reg(thread_t reg) {
-    kern_return_t kret;
-
-    return KERN_SUCCESS;
-}
-
-kern_return_t get_all_reg(thread_t reg) {
-    kern_return_t kret;
-    //thanks MIT!
-     thread_act_port_array_t thread_list;
-     mach_msg_type_number_t thread_count;
-     kret = task_threads(port, &thread_list, &thread_count);
-     if (kret != KERN_SUCCESS) {
-         return KERN_FAILURE;
-     }
-
-     arm_thread_state_t *state;
-     mach_msg_type_number_t scount = ARM_THREAD_STATE_COUNT;
-
-    thread_get_state(thread_list[0], ARM_THREAD_STATE, (thread_state_t) state, &thread_count);
-
+    
+    //https://opensource.apple.com/source/cctools/cctools-877.8/include/mach/arm/_structs.h.auto.html
+    //not arm64!
+    thread_get_state(thread_list[0], ARM_THREAD_STATE, (thread_state_t) state, &scount);
+    printf("[!] r3 = 0x%x\n", state->__r[2]);
+    
     return KERN_SUCCESS;
 }
 
@@ -191,9 +187,12 @@ void interact(mach_port_t port) {
             printf("\n[!] List of commands:\n"
                    "write 0x[address] 0x[data] - writes 0x[data] to 0x[address]\n"
                    "writeoffset 0x[offset] 0x[data] - writes 0x[data] to 0x[offset] + slide\n"
-                   "read 0x[address] 0x[bytes] - reads 0x[bytes] from 0x[address]\n"
-                   "read 0x[offset] 0x[bytes] - reads 0x[bytes] from 0x[offset] + slide\n"
+                   "read 0x[address] [bytes] - reads [bytes] from 0x[address]\n"
+                   "readoffset 0x[offset] [bytes] - reads [bytes] from 0x[offset] + slide\n"
                    "slide - gets current slide as 0x[slide]\n"
+                   "protect 0x[address] [bytes] - sets R|W|X permissions at 0x[address] for [bytes]\n"
+                   "regread [register] - reads register - pass \"all\" to get all registers\n"
+                   "regwrite [register] - writes register\n"
                    "exit - self explanatory\n"); }
         
         //EXIT
@@ -205,8 +204,30 @@ void interact(mach_port_t port) {
         //get slide
         else if (strcmp(args[0], "slide\n") == 0) {
             printf("[!] Current slide is: 0x%lx\n", (vm_address_t) _dyld_get_image_vmaddr_slide(0)); }
+   
+#if defined(DBG_ARM)
         
-        //writeMemory (3 args)
+        //register_magic (2 args)
+        else if (strcmp(args[0], "regread") == 0 && args[1][0] != '\0') {
+            register_magic(port, false, args[1]); }
+        else if (strcmp(args[0], "regread\n") == 0) {
+            printf("[!] Error! Not enough arguments for regread!\n"); }
+        else if (strcmp(args[0], "regwrite") == 0 && args[1][0] != '\0') {
+            printf("[!] REG WRITE\n"); }
+        else if (strcmp(args[0], "regwrite\n") == 0) {
+            printf("[!] Error! Not enough arguments for regwrite!\n"); }
+            
+#endif
+        
+        //set_region_protection
+        else if (strcmp(args[0], "protect") == 0 && args[1][0] != '\0' && args[2][0] != '\0') {
+            set_region_protection(port, (vm_address_t) strtol(args[1], NULL, 0), (vm_size_t) strtol(args[2], NULL, 0)); }
+        else if (strcmp(args[0], "protect") == 0 && args[1][0] != '\0' && args[2][0] == '\0') {
+            printf("[!] Error! Not enough arguments for protect!\n"); }
+        else if (strcmp(args[0], "protect\n") == 0) {
+            printf("[!] Error! Not enough arguments for protect!\n"); }
+        
+        //write_memory (3 args)
         else if (strcmp(args[0], "write") == 0 && args[1][0] != '\0' && args[2][0] != '\0') {
             write_memory(port, (vm_address_t) strtol(args[1], NULL, 0), (vm_address_t) strtol(args[2], NULL, 0)); }
         else if (strcmp(args[0], "write") == 0 && args[1][0] != '\0' && args[2][0] == '\0') {
@@ -214,7 +235,7 @@ void interact(mach_port_t port) {
         else if (strcmp(args[0], "write\n") == 0) {
             printf("[!] Error! Not enough arguments for write!\n"); }
         
-        //writeOffset (3 args)
+        //write_offset (3 args)
         else if (strcmp(args[0], "writeoffset") == 0 && args[1][0] != '\0' && args[2][0] != '\0') {
             write_offset(port, (vm_address_t) strtol(args[1], NULL, 0), (vm_address_t) strtol(args[2], NULL, 0)); }
         else if (strcmp(args[0], "writeoffset") == 0 && args[1][0] != '\0' && args[2][0] == '\0') {
@@ -222,7 +243,7 @@ void interact(mach_port_t port) {
         else if (strcmp(args[0], "writeoffset\n") == 0) {
             printf("[!] Error! Not enough arguments for writeoffset!\n"); }
         
-        //readMemory (3 args)
+        //read_memory (3 args)
         else if (strcmp(args[0], "read") == 0 && args[1][0] != '\0' && args[2][0] != '\0') {
             read_memory(port, (vm_address_t) strtol(args[1], NULL, 0), (vm_address_t) strtol(args[2], NULL, 0)); }
         else if (strcmp(args[0], "read") == 0 && args[1][0] != '\0' && args[2][0] == '\0') {
@@ -230,7 +251,7 @@ void interact(mach_port_t port) {
         else if (strcmp(args[0], "read\n") == 0) {
             printf("[!] Error! Not enough arguments for read!\n"); }
         
-        //readOffset (3 args)
+        //read_offset (3 args)
         else if (strcmp(args[0], "readoffset") == 0 && args[1][0] != '\0' && args[2][0] != '\0') {
             read_offset(port, (vm_address_t) strtol(args[1], NULL, 0), (vm_address_t) strtol(args[2], NULL, 0)); }
         else if (strcmp(args[0], "readoffset") == 0 && args[1][0] != '\0' && args[2][0] == '\0') {
