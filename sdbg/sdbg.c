@@ -2,6 +2,7 @@
 
 
 
+
 /*
  sign with these entitlements
  ldid -Sent.xml sdbg
@@ -23,12 +24,11 @@
 //#define DBG_ARM
 //let me compile on my mac pls
 
-int pid = 0;
-mach_port_t port;
+
 
 
 //cli
-void interact(int pid, mach_port_t port) {
+void interact(pid_t pid, mach_port_t port) {
     char input[128];
     char args[10][30];
     
@@ -36,9 +36,7 @@ void interact(int pid, mach_port_t port) {
     
     while (1) {
     
-        for (int i=0; i<10; i++) {
-            memset(args[i],0,sizeof(args));
-        }
+        memset(args, 0, sizeof(args[0][0])*10*30);
     
         printf("(SDBG) ");
         fgets(input, 128, stdin);
@@ -107,7 +105,7 @@ void interact(int pid, mach_port_t port) {
         
         //register_magic (2 args)
         else if (strcmp(args[0], "regread") == 0 && args[1][0] != '\0') {
-            register_magic(port, false, args[1]); }
+            register_magic(pid, port, false, args[1]); }
         else if (strcmp(args[0], "regread\n") == 0) {
             printf("[!] Error! Not enough arguments for regread!\n"); }
         else if (strcmp(args[0], "regwrite") == 0 && args[1][0] != '\0') {
@@ -164,6 +162,9 @@ void interact(int pid, mach_port_t port) {
 
 
 int main() {
+    pid_t pid;
+    mach_port_t port;
+    
     printf("[!] Welcome to SDBG!\n\n");
 
     //check if root
@@ -185,7 +186,7 @@ int main() {
         exit(0);
     }
     else {
-        printf("[+] Obtained task_for_pid: %d!\n", pid); }
+        printf("[+] Obtained task_for_pid! - pid:%d\n", pid); }
     
     interact(pid, port);
     return 0;

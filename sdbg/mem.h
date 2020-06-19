@@ -12,31 +12,31 @@ vm_address_t get_real_addr( vm_address_t offset );
 
 
 void read_memory(
-                 int pid,
+                 pid_t pid,
                  mach_port_t port,
                  vm_address_t addr,
                  vm_size_t bytes);
 
 void read_offset(
-                 int pid,
+                 pid_t pid,
                  mach_port_t port,
                  vm_address_t offset,
                  vm_size_t bytes);
 
 void write_memory(
-                  int pid,
+                  pid_t pid,
                   mach_port_t port,
                   vm_address_t addr,
                   vm_address_t data);
 
 void write_offset(
-                  int pid,
+                  pid_t pid,
                   mach_port_t port,
                   vm_address_t offset,
                   vm_address_t data);
 
 void set_region_protection(
-                           int pid,
+                           pid_t pid,
                            mach_port_t port,
                            vm_address_t addr,
                            vm_size_t size);
@@ -45,7 +45,7 @@ void set_region_protection(
 #ifdef __arm64
 
 kern_return_t register_magic(
-                             int pid,
+                             pid_t pid,
                              mach_port_t port,
                              bool isWrite,
                              char reg[40]);

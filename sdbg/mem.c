@@ -8,8 +8,11 @@ vm_address_t get_real_addr(vm_address_t offset) {
 }
 
 //reads memory
-void read_memory(int pid, mach_port_t port, vm_address_t addr, vm_size_t bytes) {
+void read_memory(pid_t pid, mach_port_t port, vm_address_t addr, vm_size_t bytes) {
     kern_return_t kret = task_for_pid(mach_task_self(), pid, &port);
+    if (kret != KERN_SUCCESS) {
+        printf("[!] Error! Could not obtain task_for_pid - pid: %d\n", pid);
+        printf("[!] Mach error: %s\n", mach_error_string(kret)); }
     
     printf("[+] Reading %d bytes from memory from address: 0x%lx\n", (int) bytes, addr);
     vm_address_t readOut;
@@ -24,8 +27,11 @@ void read_memory(int pid, mach_port_t port, vm_address_t addr, vm_size_t bytes) 
 
 //reads memory of offset
 //see get_real_addr()
-void read_offset(int pid, mach_port_t port, vm_address_t offset, vm_size_t bytes) {
+void read_offset(pid_t pid, mach_port_t port, vm_address_t offset, vm_size_t bytes) {
     kern_return_t kret = task_for_pid(mach_task_self(), pid, &port);
+    if (kret != KERN_SUCCESS) {
+        printf("[!] Error! Could not obtain task_for_pid - pid: %d\n", pid);
+        printf("[!] Mach error: %s\n", mach_error_string(kret)); }
     
     printf("[!] Current slide is: 0x%lx\n", (vm_address_t) _dyld_get_image_vmaddr_slide(0));
     printf("[+] Reading %d bytes from memory from offset: 0x%lx\n", (int) bytes, get_real_addr(offset));
@@ -40,8 +46,11 @@ void read_offset(int pid, mach_port_t port, vm_address_t offset, vm_size_t bytes
 }
 
 //write memory to address
-void write_memory(int pid, mach_port_t port, vm_address_t addr, vm_address_t data) {
+void write_memory(pid_t pid, mach_port_t port, vm_address_t addr, vm_address_t data) {
     kern_return_t kret = task_for_pid(mach_task_self(), pid, &port);
+    if (kret != KERN_SUCCESS) {
+        printf("[!] Error! Could not obtain task_for_pid - pid: %d\n", pid);
+        printf("[!] Mach error: %s\n", mach_error_string(kret)); }
 
     printf("[+] Writing memory: 0x%lx with data: 0x%lx\n", addr, data);
     kret = vm_write(port, addr, (vm_offset_t) &data, sizeof(data));
@@ -56,8 +65,11 @@ void write_memory(int pid, mach_port_t port, vm_address_t addr, vm_address_t dat
 //write memory to offset
 //see get_real_addr()
 //may not work as expected, works in theory but permission changes could be required
-void write_offset(int pid, mach_port_t port, vm_address_t offset, vm_address_t data) {
+void write_offset(pid_t pid, mach_port_t port, vm_address_t offset, vm_address_t data) {
     kern_return_t kret = task_for_pid(mach_task_self(), pid, &port);
+    if (kret != KERN_SUCCESS) {
+        printf("[!] Error! Could not obtain task_for_pid - pid: %d\n", pid);
+        printf("[!] Mach error: %s\n", mach_error_string(kret)); }
     
     printf("[!] Current slide is: 0x%lx\n", (vm_address_t) _dyld_get_image_vmaddr_slide(0));
     printf("[+] Writing address: 0x%lx with data: 0x%lx\n", get_real_addr(offset), data);
@@ -71,8 +83,11 @@ void write_offset(int pid, mach_port_t port, vm_address_t offset, vm_address_t d
 
 
 //vm_protect
-void set_region_protection(int pid, mach_port_t port, vm_address_t addr, vm_size_t size) {
+void set_region_protection(pid_t pid, mach_port_t port, vm_address_t addr, vm_size_t size) {
     kern_return_t kret = task_for_pid(mach_task_self(), pid, &port);
+    if (kret != KERN_SUCCESS) {
+        printf("[!] Error! Could not obtain task_for_pid - pid: %d\n", pid);
+        printf("[!] Mach error: %s\n", mach_error_string(kret)); }
     
     printf("[!] Setting %d byte region permissions at 0x%lx as R|W|X\n", (int) size, addr);
     kret = vm_protect(port, addr, size, 0, VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE);
@@ -86,8 +101,11 @@ void set_region_protection(int pid, mach_port_t port, vm_address_t addr, vm_size
 
 #ifdef __arm64
 
-kern_return_t register_magic(pid, mach_port_t port, bool isWrite, char reg[40]) {
+kern_return_t register_magic(pid_t pid, mach_port_t port, bool isWrite, char reg[40]) {
     kern_return_t kret = task_for_pid(mach_task_self(), pid, &port);
+    if (kret != KERN_SUCCESS) {
+        printf("[!] Error! Could not obtain task_for_pid - pid: %d\n", pid);
+        printf("[!] Mach error: %s\n", mach_error_string(kret)); }
     
     if (strcmp(reg, "all") == 0) {
         printf("[!] Reading all registers...\n");
