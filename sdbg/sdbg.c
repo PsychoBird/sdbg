@@ -1,12 +1,7 @@
-#include "mem.h"
-
-
-
-
 /*
  sign with these entitlements
  ldid -Sent.xml sdbg
-
+ -Sent.xml is not a typo - there's no space
 
  <?xml version="1.0" encoding="UTF-8"?>
  <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd …">
@@ -20,12 +15,7 @@
  </plist>
  */
 
-
-//#define DBG_ARM
-//let me compile on my mac pls
-
-
-
+#include "mem.h"
 
 //cli
 void interact(pid_t pid, mach_port_t port) {
@@ -65,28 +55,30 @@ void interact(pid_t pid, mach_port_t port) {
         //HELP
         if (strcmp(args[0], "help\n") == 0) {
             printf("\n[!] List of commands:\n"
-                   "write 0x[address] 0x[data] - writes 0x[data] to 0x[address]\n"
-                   "writeoffset 0x[offset] 0x[data] - writes 0x[data] to 0x[offset] + slide\n"
-                   "read 0x[address] [bytes] - reads [bytes] from 0x[address]\n"
-                   "readoffset 0x[offset] [bytes] - reads [bytes] from 0x[offset] + slide\n"
-                   "slide - gets current slide as 0x[slide]\n"
-                   "protect 0x[address] [bytes] - sets R|W|X permissions at 0x[address] for [bytes]\n"
-                   "regread [register] - reads register - pass \"all\" to get all registers\n"
-                   "regwrite [register] - writes register\n"
-                   "exit - self explanatory\n"); }
+                   YELLOW "write " GREEN "0x[address] 0x[data] " WHITE "- writes " GREEN "0x[data] " WHITE "to " GREEN "0x[address]\n"
+                   YELLOW "writeoffset " GREEN "0x[offset] 0x[data] " WHITE "- writes " GREEN "0x[data] " WHITE "to " GREEN "0x[offset] " WHITE "+ slide\n"
+                   YELLOW "read " GREEN "0x[address] [bytes] " WHITE "- reads " GREEN "[bytes] " WHITE "from " GREEN "0x[address]\n"
+                   YELLOW "readoffset " GREEN "0x[offset] [bytes] " WHITE "- reads " GREEN "[bytes] " WHITE "from " GREEN "0x[offset] " WHITE "+ slide\n"
+                   YELLOW "readlines " GREEN "0x[address] [lines] " WHITE "- reads " GREEN "[lines] " WHITE "of memory from " GREEN "0x[address]\n"
+                   YELLOW "slide " WHITE "- gets current slide as address\n"
+                   YELLOW "protect " GREEN "0x[address] [bytes] " WHITE "- sets R|W|X permissions at " GREEN "0x[address] " WHITE "for " GREEN"[bytes]\n"
+                   YELLOW "regread " GREEN "[register] " WHITE "- reads value of" GREEN "[register] " WHITE "- pass \"all\" to get all registers\n"
+                   YELLOW "regwrite " GREEN "[register] " WHITE "- writes register\n"
+                   YELLOW "exit " WHITE "- self explanatory\n"); }
         
 #else
     
-        //HELP
+        
         if (strcmp(args[0], "help\n") == 0) {
             printf("\n[!] List of commands:\n"
-                   "write 0x[address] 0x[data] - writes 0x[data] to 0x[address]\n"
-                   "writeoffset 0x[offset] 0x[data] - writes 0x[data] to 0x[offset] + slide\n"
-                   "read 0x[address] [bytes] - reads [bytes] from 0x[address]\n"
-                   "readoffset 0x[offset] [bytes] - reads [bytes] from 0x[offset] + slide\n"
-                   "slide - gets current slide as 0x[slide]\n"
-                   "protect 0x[address] [bytes] - sets R|W|X permissions at 0x[address] for [bytes]\n"
-                   "exit - self explanatory\n"); }
+                   YELLOW "write " GREEN "0x[address] 0x[data] " WHITE "- writes " GREEN "0x[data] " WHITE "to " GREEN "0x[address]\n"
+                   YELLOW "writeoffset " GREEN "0x[offset] 0x[data] " WHITE "- writes " GREEN "0x[data] " WHITE "to " GREEN "0x[offset] " WHITE "+ slide\n"
+                   YELLOW "read " GREEN "0x[address] [bytes] " WHITE "- reads " GREEN "[bytes] " WHITE "from " GREEN "0x[address]\n"
+                   YELLOW "readoffset " GREEN "0x[offset] [bytes] " WHITE "- reads " GREEN "[bytes] " WHITE "from " GREEN "0x[offset] " WHITE "+ slide\n"
+                   YELLOW "readlines " GREEN "0x[address] [lines] " WHITE "- reads " GREEN "[lines] " WHITE "of memory from " GREEN "0x[address]\n"
+                   YELLOW "slide " WHITE "- gets current slide as address\n"
+                   YELLOW "protect " GREEN "0x[address] [bytes] " WHITE "- sets R|W|X permissions at " GREEN "0x[address] " WHITE "for " GREEN"[bytes]\n"
+                   YELLOW "exit " WHITE "- self explanatory\n"); }
 
         
 #endif
@@ -115,7 +107,7 @@ void interact(pid_t pid, mach_port_t port) {
             
 #endif
         
-        //set_region_protection
+        //set_region_protection (3 args)
         else if (strcmp(args[0], "protect") == 0 && args[1][0] != '\0' && args[2][0] != '\0') {
             set_region_protection(pid, port, (vm_address_t) strtol(args[1], NULL, 0), (vm_size_t) strtol(args[2], NULL, 0)); }
         else if (strcmp(args[0], "protect") == 0 && args[1][0] != '\0' && args[2][0] == '\0') {
@@ -154,6 +146,14 @@ void interact(pid_t pid, mach_port_t port) {
             printf("[!] Error! Not enough arguments for readoffset!\n"); }
         else if (strcmp(args[0], "readoffset\n") == 0) {
             printf("[!] Error! Not enough arguments for readoffset!\n"); }
+        
+        //read_memory (3 args)
+        else if (strcmp(args[0], "readlines") == 0 && args[1][0] != '\0' && args[2][0] != '\0') {
+            read_lines(pid, port, (vm_address_t) strtol(args[1], NULL, 0), (int) strtol(args[2], NULL, 0)); }
+        else if (strcmp(args[0], "readlines") == 0 && args[1][0] != '\0' && args[2][0] == '\0') {
+            printf("[!] Error! Not enough arguments for readlines!\n"); }
+        else if (strcmp(args[0], "readlines\n") == 0) {
+            printf("[!] Error! Not enough arguments for readlines!\n"); }
 
         //UNKNOWN COMMAND
         else { printf("[!] Error! Unknown command\n"); }
@@ -179,7 +179,7 @@ int main() {
     printf("[+] Attaching to pid: %d\n", pid);
     getchar();
 
-    //task_for_pid through get_task_for_pid wrapper
+    //task_for_pid
     kern_return_t kret = task_for_pid(mach_task_self(), pid, &port);
     if (kret != KERN_SUCCESS) {
         printf("[!] Error! Couldn't obtain task_for_pid: %d\n[!] Do you have the proper entitlements?\n[!] Exiting SDBG...\n", pid);

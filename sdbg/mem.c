@@ -25,6 +25,50 @@ void read_memory(pid_t pid, mach_port_t port, vm_address_t addr, vm_size_t bytes
 
 }
 
+//reads memory
+void read_lines(pid_t pid, mach_port_t port, vm_address_t addr, int lines) {
+    int remain = (int) addr % 15;
+    
+    while (remain != 0) {
+        addr--;
+        remain = (int) addr % 15;
+    }
+    
+    kern_return_t kret = task_for_pid(mach_task_self(), pid, &port);
+    if (kret != KERN_SUCCESS) {
+        printf("[!] Error! Could not obtain task_for_pid - pid: %d\n", pid);
+        printf("[!] Mach error: %s\n", mach_error_string(kret)); }
+    
+    printf("[+] Reading %d lines of memory from address: 0x%lx\n", lines, addr);
+    printf(GREEN "0x%lx " WHITE "| ", addr);
+    printf(YELLOW "00 01 02 03 04 05 06 07 07 09 0A 0B 0C 0D 0E 0F |\n");
+    
+    vm_address_t readOut;
+    vm_size_t bytes = 1;
+    
+    for (int j = 0; j < lines; j++) {
+        printf(CYAN "0x%lx " WHITE "| ", addr);
+        for (int i = 0; i <= 0xf; i++) {
+            kret = vm_read_overwrite(port, addr, bytes, (vm_offset_t) &readOut, &bytes);
+
+            if (kret == KERN_SUCCESS) {
+                if (readOut <= 0xf) {
+                    printf("0%lx ", readOut); }
+                else {
+                    printf("%lx ", readOut); }
+                addr += 0x1;
+            }
+        
+            
+            else if (kret != KERN_SUCCESS) {
+                printf("[!] Error! vm_read_overwrite failed: %s\n", mach_error_string(kret));
+                break;
+            }
+        }
+        printf("|\n");
+    }
+}
+
 //reads memory of offset
 //see get_real_addr()
 void read_offset(pid_t pid, mach_port_t port, vm_address_t offset, vm_size_t bytes) {
