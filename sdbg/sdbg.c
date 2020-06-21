@@ -54,7 +54,7 @@ void interact(pid_t pid, mach_port_t port) {
     
         //HELP
         if (strcmp(args[0], "help\n") == 0) {
-            printf("\n[!] List of commands:\n"
+            printf("[!] List of commands:\n"
                    YELLOW "write " GREEN "0x[address] 0x[data] " WHITE "- writes " GREEN "0x[data] " WHITE "to " GREEN "0x[address]\n"
                    YELLOW "writeoffset " GREEN "0x[offset] 0x[data] " WHITE "- writes " GREEN "0x[data] " WHITE "to " GREEN "0x[offset] " WHITE "+ slide\n"
                    YELLOW "read " GREEN "0x[address] [bytes] " WHITE "- reads " GREEN "[bytes] " WHITE "from " GREEN "0x[address]\n"
@@ -62,6 +62,7 @@ void interact(pid_t pid, mach_port_t port) {
                    YELLOW "readlines " GREEN "0x[address] [lines] " WHITE "- reads " GREEN "[lines] " WHITE "of memory from " GREEN "0x[address]\n"
                    YELLOW "slide " WHITE "- gets current slide as address\n"
                    YELLOW "protect " GREEN "0x[address] [bytes] " WHITE "- sets R|W|X permissions at " GREEN "0x[address] " WHITE "for " GREEN"[bytes]\n"
+                   YELLOW "pid " GREEN "[pid] " WHITE "- changes pid to new [pid]\n"
                    YELLOW "regread " GREEN "[register] " WHITE "- reads value of " GREEN "[register] " WHITE "- pass \"all\" to get all registers\n"
                    YELLOW "regwrite " GREEN "[register] 0x[value] " WHITE "- writes " GREEN "[register] " WHITE "with " GREEN "0x[value]\n"
                    YELLOW "exit " WHITE "- self explanatory\n"); }
@@ -70,7 +71,7 @@ void interact(pid_t pid, mach_port_t port) {
     
         
         if (strcmp(args[0], "help\n") == 0) {
-            printf("\n[!] List of commands:\n"
+            printf("[!] List of commands:\n"
                    YELLOW "write " GREEN "0x[address] 0x[data] " WHITE "- writes " GREEN "0x[data] " WHITE "to " GREEN "0x[address]\n"
                    YELLOW "writeoffset " GREEN "0x[offset] 0x[data] " WHITE "- writes " GREEN "0x[data] " WHITE "to " GREEN "0x[offset] " WHITE "+ slide\n"
                    YELLOW "read " GREEN "0x[address] [bytes] " WHITE "- reads " GREEN "[bytes] " WHITE "from " GREEN "0x[address]\n"
@@ -78,6 +79,7 @@ void interact(pid_t pid, mach_port_t port) {
                    YELLOW "readlines " GREEN "0x[address] [lines] " WHITE "- reads " GREEN "[lines] " WHITE "of memory from " GREEN "0x[address]\n"
                    YELLOW "slide " WHITE "- gets current slide as address\n"
                    YELLOW "protect " GREEN "0x[address] [bytes] " WHITE "- sets R|W|X permissions at " GREEN "0x[address] " WHITE "for " GREEN"[bytes]\n"
+                   YELLOW "pid " GREEN "[pid] " WHITE "- changes pid to new [pid]\n"
                    YELLOW "exit " WHITE "- self explanatory\n"); }
 
         
@@ -91,25 +93,12 @@ void interact(pid_t pid, mach_port_t port) {
         
         //get slide
         else if (strcmp(args[0], "slide\n") == 0) {
-            printf("[!] Current slide is: 0x%lx\n", (vm_address_t) _dyld_get_image_vmaddr_slide(0)); }
-   
-#ifdef __arm64
+            printf(GREEN "0x%lx " WHITE "\n", (vm_address_t) _dyld_get_image_vmaddr_slide(0)); }
         
-        //register_read (2 args)
-        else if (strcmp(args[0], "regread") == 0 && args[1][0] != '\0') {
-            register_read(pid, port, args[1]); }
-        else if (strcmp(args[0], "regread\n") == 0) {
-            printf("[!] Error! Not enough arguments for regread!\n"); }
-        
-        //register_write (3 args)
-        else if (strcmp(args[0], "regwrite") == 0 && args[1][0] != '\0' && args[2][0] != '\0') {
-            register_write(pid, port, args[1], (vm_address_t) strtol(args[2], NULL, 0)); }
-        else if (strcmp(args[0], "regwrite") == 0 && args[1][0] != '\0' && args[2][0] == '\0') {
-            printf("[!] Error! Not enough arguments for regwrite!\n"); }
-        else if (strcmp(args[0], "regwrite\n") == 0) {
-            printf("[!] Error! Not enough arguments for regwrite!\n"); }
-            
-#endif
+        else if (strcmp(args[0], "pid\n") == 0) {
+            printf(GREEN "%d" WHITE "\n", pid); }
+        else if (strcmp(args[0], "pid") == 0 && args[1][0] != '\0') {
+            pid = (int) strtol(args[1], NULL, 0); printf("[!] PID changed to %d\n", pid); }
         
         //set_region_protection (3 args)
         else if (strcmp(args[0], "protect") == 0 && args[1][0] != '\0' && args[2][0] != '\0') {
@@ -153,11 +142,29 @@ void interact(pid_t pid, mach_port_t port) {
         
         //read_memory (3 args)
         else if (strcmp(args[0], "readlines") == 0 && args[1][0] != '\0' && args[2][0] != '\0') {
-            read_lines(pid, port, (vm_address_t) strtol(args[1], NULL, 0), (int) strtol(args[2], NULL, 0)); }
+            read_lines(pid, port, args[1], (int) strtol(args[2], NULL, 0)); }
         else if (strcmp(args[0], "readlines") == 0 && args[1][0] != '\0' && args[2][0] == '\0') {
             printf("[!] Error! Not enough arguments for readlines!\n"); }
         else if (strcmp(args[0], "readlines\n") == 0) {
             printf("[!] Error! Not enough arguments for readlines!\n"); }
+        
+#ifdef __arm64
+                
+        //register_read (2 args)
+        else if (strcmp(args[0], "regread") == 0 && args[1][0] != '\0') {
+            register_read(pid, port, args[1]); }
+        else if (strcmp(args[0], "regread\n") == 0) {
+            printf("[!] Error! Not enough arguments for regread!\n"); }
+                
+        //register_write (3 args)
+        else if (strcmp(args[0], "regwrite") == 0 && args[1][0] != '\0' && args[2][0] != '\0') {
+            register_write(pid, port, args[1], (vm_address_t) strtol(args[2], NULL, 0)); }
+        else if (strcmp(args[0], "regwrite") == 0 && args[1][0] != '\0' && args[2][0] == '\0') {
+            printf("[!] Error! Not enough arguments for regwrite!\n"); }
+        else if (strcmp(args[0], "regwrite\n") == 0) {
+            printf("[!] Error! Not enough arguments for regwrite!\n"); }
+                    
+#endif
 
         //UNKNOWN COMMAND
         else { printf("[!] Error! Unknown command\n"); }
@@ -169,7 +176,7 @@ int main() {
     pid_t pid;
     mach_port_t port;
     
-    printf("[!] Welcome to SDBG!\n\n");
+    printf("[!] Welcome to SDBG!\n");
 
     //check if root
     if (geteuid() && getuid()) {

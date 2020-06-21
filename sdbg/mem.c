@@ -19,20 +19,18 @@ void read_memory(pid_t pid, mach_port_t port, vm_address_t addr, vm_size_t bytes
     kret = vm_read_overwrite(port, addr, bytes, (vm_offset_t) &readOut, &bytes);
 
     if (kret == KERN_SUCCESS) {
-        printf("[+] vm_read_overwrite return: 0x%lx - as int: %lu\n", readOut, readOut); }
+        printf("[+] vm_read_overwrite result: 0x%lx - as int: %lu\n", readOut, readOut); }
     else if (kret != KERN_SUCCESS) {
         printf("[!] Error! vm_read_overwrite failed: %s\n", mach_error_string(kret)); }
 
 }
 
 //reads memory
-void read_lines(pid_t pid, mach_port_t port, vm_address_t addr, int lines) {
-    int remain = (int) addr % 15;
-    
-    while (remain != 0) {
-        addr--;
-        remain = (int) addr % 15;
-    }
+void read_lines(pid_t pid, mach_port_t port, char address[20], int lines) {
+    vm_address_t addr = (vm_address_t) strtol(address, NULL, 0);
+    address[strlen(address)-1] = '0';
+
+    vm_address_t zeroaddr = (vm_address_t) strtol(address, NULL, 0);
     
     kern_return_t kret = task_for_pid(mach_task_self(), pid, &port);
     if (kret != KERN_SUCCESS) {
@@ -47,16 +45,16 @@ void read_lines(pid_t pid, mach_port_t port, vm_address_t addr, int lines) {
     vm_size_t bytes = 1;
     
     for (int j = 0; j < lines; j++) {
-        printf(CYAN "0x%lx " WHITE "| ", addr);
+        printf(CYAN "0x%lx " WHITE "| ", zeroaddr);
         for (int i = 0; i <= 0xf; i++) {
-            kret = vm_read_overwrite(port, addr, bytes, (vm_offset_t) &readOut, &bytes);
+            kret = vm_read_overwrite(port, zeroaddr, bytes, (vm_offset_t) &readOut, &bytes);
 
             if (kret == KERN_SUCCESS) {
                 if (readOut <= 0xf) {
                     printf("0%lx ", readOut); }
                 else {
                     printf("%lx ", readOut); }
-                addr += 0x1;
+                zeroaddr += 0x1;
             }
         
             
@@ -83,7 +81,7 @@ void read_offset(pid_t pid, mach_port_t port, vm_address_t offset, vm_size_t byt
     kret = vm_read_overwrite(port, get_real_addr(offset), bytes, (vm_offset_t) &readOut, &bytes);
 
     if (kret == KERN_SUCCESS) {
-        printf("[+] vm_read_overwrite return: 0x%lx - as int: %lu\n", readOut, readOut); }
+        printf("[+] vm_read_overwrite result: 0x%lx - as int: %lu\n", readOut, readOut); }
     else if (kret != KERN_SUCCESS) {
         printf("[!] Error! vm_read_overwrite (offset) failed: %s\n", mach_error_string(kret)); }
 

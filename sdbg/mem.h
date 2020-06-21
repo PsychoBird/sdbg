@@ -34,7 +34,7 @@ void read_offset(
 void read_lines(
                 pid_t pid,
                 mach_port_t port,
-                vm_address_t addr,
+                char address[20],
                 int lines);
 
 void write_memory(
