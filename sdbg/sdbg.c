@@ -62,8 +62,8 @@ void interact(pid_t pid, mach_port_t port) {
                    YELLOW "readlines " GREEN "0x[address] [lines] " WHITE "- reads " GREEN "[lines] " WHITE "of memory from " GREEN "0x[address]\n"
                    YELLOW "slide " WHITE "- gets current slide as address\n"
                    YELLOW "protect " GREEN "0x[address] [bytes] " WHITE "- sets R|W|X permissions at " GREEN "0x[address] " WHITE "for " GREEN"[bytes]\n"
-                   YELLOW "regread " GREEN "[register] " WHITE "- reads value of" GREEN "[register] " WHITE "- pass \"all\" to get all registers\n"
-                   YELLOW "regwrite " GREEN "[register] " WHITE "- writes register\n"
+                   YELLOW "regread " GREEN "[register] " WHITE "- reads value of " GREEN "[register] " WHITE "- pass \"all\" to get all registers\n"
+                   YELLOW "regwrite " GREEN "[register] 0x[value] " WHITE "- writes " GREEN "[register] " WHITE "with " GREEN "0x[value]\n"
                    YELLOW "exit " WHITE "- self explanatory\n"); }
         
 #else
@@ -95,13 +95,17 @@ void interact(pid_t pid, mach_port_t port) {
    
 #ifdef __arm64
         
-        //register_magic (2 args)
+        //register_read (2 args)
         else if (strcmp(args[0], "regread") == 0 && args[1][0] != '\0') {
-            register_magic(pid, port, false, args[1]); }
+            register_read(pid, port, args[1]); }
         else if (strcmp(args[0], "regread\n") == 0) {
             printf("[!] Error! Not enough arguments for regread!\n"); }
-        else if (strcmp(args[0], "regwrite") == 0 && args[1][0] != '\0') {
-            printf("[!] REG WRITE\n"); }
+        
+        //register_write (3 args)
+        else if (strcmp(args[0], "regwrite") == 0 && args[1][0] != '\0' && args[2][0] != '\0') {
+            register_write(pid, port, args[1], (vm_address_t) strtol(args[2], NULL, 0)); }
+        else if (strcmp(args[0], "regwrite") == 0 && args[1][0] != '\0' && args[2][0] == '\0') {
+            printf("[!] Error! Not enough arguments for regwrite!\n"); }
         else if (strcmp(args[0], "regwrite\n") == 0) {
             printf("[!] Error! Not enough arguments for regwrite!\n"); }
             
@@ -169,7 +173,7 @@ int main() {
 
     //check if root
     if (geteuid() && getuid()) {
-        printf("[!] Run SDBG as root.\n[!] Do you have the proper entitlements?\n[!] Exiting SDBG...\n");
+        printf("[!] Error! Run SDBG as root.\n[!] Do you have the proper entitlements?\n[!] Exiting SDBG...\n");
         exit(0);
     }
 
@@ -186,7 +190,7 @@ int main() {
         exit(0);
     }
     else {
-        printf("[+] Obtained task_for_pid! - pid:%d\n", pid); }
+        printf("[+] Obtained task_for_pid!\n"); }
     
     interact(pid, port);
     return 0;

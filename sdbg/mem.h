@@ -58,10 +58,15 @@ void set_region_protection(
 
 #ifdef __arm64
 
-kern_return_t register_magic(
+kern_return_t register_read(
                              pid_t pid,
                              mach_port_t port,
-                             bool isWrite,
-                             char reg[40]);
+                             char reg[10]);
+
+kern_return_t register_write(
+                             pid_t pid,
+                             mach_port_t port,
+                             char reg[10],
+                             vm_address_t val);
 
 #endif
