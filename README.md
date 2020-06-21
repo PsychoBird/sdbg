@@ -1,5 +1,5 @@
 
-# sdbg - scuffed debugger for iOS
+# sdbg - debugger for iOS written in C
 
 Features:
 - Write memory (write)
@@ -8,8 +8,10 @@ Features:
 - Read memory of offset (readoffset)
 - Read lines from memory (readlines)
 - Set memory region permissions (protect)
-- Get current memory slide (slide)
-- And more coming...
+- Get memory slide (slide)
+- Get and set process ID (pid)
+- Read registers (regread)
+- Write registers (regwrite)
 
 Make sure to sign sdbg with ent.xml! SDBG can't operate without proper entitlements.
 
