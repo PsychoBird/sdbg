@@ -50,8 +50,6 @@ void interact(pid_t pid, mach_port_t port) {
             }
         }
         
-#ifdef __arm64
-    
         //HELP
         if (strcmp(args[0], "help\n") == 0) {
             printf("[!] List of commands:\n"
@@ -63,27 +61,12 @@ void interact(pid_t pid, mach_port_t port) {
                    YELLOW "slide " WHITE "- gets current slide as address\n"
                    YELLOW "protect " GREEN "0x[address] [bytes] " WHITE "- sets R|W|X permissions at " GREEN "0x[address] " WHITE "for " GREEN"[bytes]\n"
                    YELLOW "pid " GREEN "[pid] " WHITE "- changes pid to new [pid]\n"
+#ifdef __arm64
                    YELLOW "regread " GREEN "[register] " WHITE "- reads value of " GREEN "[register] " WHITE "- pass \"all\" to get all registers\n"
                    YELLOW "regwrite " GREEN "[register] 0x[value] " WHITE "- writes " GREEN "[register] " WHITE "with " GREEN "0x[value]\n"
-                   YELLOW "exit " WHITE "- self explanatory\n"); }
-        
-#else
-    
-        
-        if (strcmp(args[0], "help\n") == 0) {
-            printf("[!] List of commands:\n"
-                   YELLOW "write " GREEN "0x[address] 0x[data] " WHITE "- writes " GREEN "0x[data] " WHITE "to " GREEN "0x[address]\n"
-                   YELLOW "writeoffset " GREEN "0x[offset] 0x[data] " WHITE "- writes " GREEN "0x[data] " WHITE "to " GREEN "0x[offset] " WHITE "+ slide\n"
-                   YELLOW "read " GREEN "0x[address] [bytes] " WHITE "- reads " GREEN "[bytes] " WHITE "from " GREEN "0x[address]\n"
-                   YELLOW "readoffset " GREEN "0x[offset] [bytes] " WHITE "- reads " GREEN "[bytes] " WHITE "from " GREEN "0x[offset] " WHITE "+ slide\n"
-                   YELLOW "readlines " GREEN "0x[address] [lines] " WHITE "- reads " GREEN "[lines] " WHITE "of memory from " GREEN "0x[address]\n"
-                   YELLOW "slide " WHITE "- gets current slide as address\n"
-                   YELLOW "protect " GREEN "0x[address] [bytes] " WHITE "- sets R|W|X permissions at " GREEN "0x[address] " WHITE "for " GREEN"[bytes]\n"
-                   YELLOW "pid " GREEN "[pid] " WHITE "- changes pid to new [pid]\n"
-                   YELLOW "exit " WHITE "- self explanatory\n"); }
-
-        
 #endif
+                   YELLOW "exit " WHITE "- self explanatory\n"); }
+    
         
         //EXIT
         else if (strcmp(args[0], "exit\n") == 0) {
