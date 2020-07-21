@@ -13,45 +13,46 @@
 #define BLUE    "\033[34m"      /* Blue */
 #define MAGENTA "\033[35m"      /* Magenta */
 #define CYAN    "\033[36m"      /* Cyan */
-#define WHITE   "\033[37m"
+#define WHITE   "\033[00m"
 
+#define GOOD "\033[32m # " WHITE
+#define ERROR "\033[31m # " WHITE
+
+#define EXIT printf(ERROR"Exiting SDBG...\n"); exit(0);
+
+typedef unsigned char byte_t;
 
 vm_address_t get_real_addr( vm_address_t offset );
 
 
 void read_memory(
-                 pid_t pid,
-                 mach_port_t port,
+                 mach_port_t task,
                  vm_address_t addr,
                  vm_size_t bytes);
 
 void read_offset(
-                 pid_t pid,
-                 mach_port_t port,
+                 mach_port_t task,
                  vm_address_t offset,
                  vm_size_t bytes);
 
 void read_lines(
-                pid_t pid,
-                mach_port_t port,
+                mach_port_t task,
                 char address[20],
-                int lines);
+                int lines,
+                bool printchar);
 
 void write_memory(
-                  pid_t pid,
-                  mach_port_t port,
+                  mach_port_t task,
                   vm_address_t addr,
                   vm_address_t data);
 
 void write_offset(
-                  pid_t pid,
-                  mach_port_t port,
+                  mach_port_t task,
                   vm_address_t offset,
                   vm_address_t data);
 
 void set_region_protection(
-                           pid_t pid,
-                           mach_port_t port,
+                           mach_port_t task,
                            vm_address_t addr,
                            vm_size_t size);
 
@@ -59,14 +60,12 @@ void set_region_protection(
 #ifdef __arm64
 
 kern_return_t register_read(
-                             pid_t pid,
-                             mach_port_t port,
+                             mach_port_t task,
                              char reg[10]);
 
 kern_return_t register_write(
-                             pid_t pid,
-                             mach_port_t port,
+                             mach_port_t task,
                              char reg[10],
-                             vm_address_t val);
+                             uint64_t val);
 
 #endif
